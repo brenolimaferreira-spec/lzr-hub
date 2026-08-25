@@ -148,6 +148,41 @@ for ligado, quem envia passa a ser o próprio HUB chamando a Evolution
 ⚠️ E não deve ser ligado enquanto as respostas do pipeline forem de homologação
 ("preparei a segunda via *fictícia*"). Ver a seção da IA no CLAUDE.md.
 
+## ⚠️ Mudou o webhook? Reinicie a instância
+
+A Evolution **guarda a configuração do webhook em cache**. Alterar a URL ou o
+cabeçalho **não afeta a instância que já está rodando** — ela continua entregando
+com a configuração antiga até reiniciar.
+
+Isso já custou uma sessão inteira de depuração: um Bearer vazio foi corrigido às
+15:22, a mensagem de teste chegou às 15:31 e mesmo assim saiu com o valor velho,
+tomou 401 na nossa API e **sumiu sem deixar rastro em lugar nenhum**.
+
+Depois de qualquer mudança no webhook:
+
+```bash
+curl -H "apikey: $EVOLUTION_API_KEY" http://127.0.0.1:8081/instance/restart/LZR-HUB
+```
+
+A instância reconecta sozinha em poucos segundos, sem QR novo.
+
+### Como saber se uma mensagem se perdeu assim
+
+A Evolution registra o payload que **montou**, não o resultado da entrega — um
+401 do outro lado não aparece no log dela. O jeito de conferir é pela
+idempotência: reenvie o mesmo payload para a rota e compare o `correlationId`.
+
+- `correlationId` **igual** ao de uma reentrega anterior → a mensagem estava
+  gravada, a entrega original funcionou
+- `correlationId` **novo** → aquela mensagem nunca tinha sido processada, e a
+  entrega original se perdeu
+
+O payload completo sai do log:
+
+```bash
+docker logs evolution_api --since 30m | grep -A 25 "messages.upsert"
+```
+
 ## Trocar o segredo sem derrubar o canal
 
 O segredo vive em dois lugares que não dá para salvar ao mesmo tempo: a variável
