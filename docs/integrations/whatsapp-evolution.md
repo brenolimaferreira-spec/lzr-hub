@@ -225,6 +225,24 @@ Na ordem:
 3. **O Bearer está certo?** Sem ele a rota responde 401, e a Evolution registra a falha no log dela
 4. **A rota respondeu `ignored`?** Aí não é falha de entrega: veja o `reason` na tabela acima
 
+## O nono dígito
+
+⚠️ O WhatsApp entrega o número **sem o nono dígito** em alguns casos. Medido no
+canal real: chegou `557999151289` — DDD mais **oito** dígitos — para um celular.
+O próprio log da Evolution mostra os dois formatos convivendo:
+
+```
+Register exists for [5579999151289@s.whatsapp.net, 557999151289@s.whatsapp.net]?
+```
+
+Se o cliente escrever pelo formato curto e o IXC guardar o longo, a busca não
+acha e **um cliente antigo vira lead**. Por isso `findCustomerByPhone` procura os
+dois formatos — e continua valendo a regra de **exatamente um resultado**: se os
+dois formatos apontarem para cadastros diferentes, alguém digitou errado num
+deles, e escolher um seria escolher no escuro.
+
+Ver `phoneCandidates` em `lib/integrations/ixc/readonly-provider.ts`.
+
 ## Por que a captação de lead às vezes não cria nada
 
 É comportamento correto, não defeito. Só vira lead quem **não** é cliente no IXC.

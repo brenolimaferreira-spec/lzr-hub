@@ -4,7 +4,7 @@ import {
   CrmValidationError, MemoryCrmRepository, captureLeadFromContact,
   funnelMetrics, isStage, maskPhone, parseLeadInput,
 } from "../lib/platform/crm-service.ts";
-import { ixcPhoneFormat } from "../lib/integrations/ixc/readonly-provider.ts";
+import { ixcPhoneFormat, phoneCandidates } from "../lib/integrations/ixc/readonly-provider.ts";
 
 test("telefone do canal vira o formato que o IXC guarda", () => {
   // Foi isto que fez a busca parecer impossível: o canal manda 5579998307232,
@@ -13,6 +13,23 @@ test("telefone do canal vira o formato que o IXC guarda", () => {
   assert.equal(ixcPhoneFormat("79998307232"), "(79) 99830-7232");
   assert.equal(ixcPhoneFormat("7933334444"), "(79) 3333-4444", "fixo de 10 dígitos");
   assert.equal(ixcPhoneFormat("123"), undefined, "sem formato conhecido, nada é chutado");
+});
+
+test("celular é procurado com e sem o nono dígito", () => {
+  // Medido no canal real: o WhatsApp entregou 557999151289 — DDD mais oito
+  // dígitos. Se o IXC guardar o formato longo, procurar só o curto não acha, e
+  // um cliente antigo vira lead.
+  assert.deepEqual(phoneCandidates("557999151289"), ["(79) 9915-1289", "(79) 99915-1289"]);
+  assert.deepEqual(phoneCandidates("5579999151289"), ["(79) 99915-1289", "(79) 9915-1289"]);
+});
+
+test("fixo não ganha nono dígito", () => {
+  // Só celular tem nono dígito; inventar um em fixo procuraria número que não existe.
+  assert.deepEqual(phoneCandidates("557933334444"), ["(79) 3333-4444"]);
+});
+
+test("número sem formato conhecido não vira candidato nenhum", () => {
+  assert.deepEqual(phoneCandidates("123"), []);
 });
 
 test("telefone aparece mascarado no funil", () => {

@@ -458,7 +458,7 @@ function Copilot({ channel, conversationId }: { channel:string; conversationId:s
 /**
  * Atendimentos mostra o que realmente entrou pelos canais. Não há conversa de
  * exemplo: sem histórico gravado, a tela explica por quê. O envio pela tela
- * ainda não existe — quem responde é o fluxo do n8n — então o campo fica
+ * ainda não existe: ninguém envia resposta ao cliente hoje, então o campo fica
  * desabilitado em vez de fingir que mandou.
  */
 function Conversation() {
@@ -516,7 +516,7 @@ function Conversation() {
           <time>{new Date(message.createdAt).toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"})}</time>
         </div>)}
       </div>
-      <div className="composer"><textarea disabled placeholder="Responder pela tela ainda não está ligado — a resposta sai pelo fluxo do n8n." /><button aria-label="Enviar" disabled>➤</button></div>
+      <div className="composer"><textarea disabled placeholder="Responder pela tela ainda não está ligado. Nenhuma resposta é enviada ao cliente — o canal está em modo observação." /><button aria-label="Enviar" disabled>➤</button></div>
     </section>
     <aside className="customer-panel">
       <div className="customer-head"><Avatar initials={selected?conversationLabel(selected.externalConversationId).slice(-2):"—"} /><h3>{selected?conversationLabel(selected.externalConversationId):"—"}</h3><p>Identificador do canal • {selected?.channel}</p></div>

@@ -205,7 +205,7 @@ O formato da **resposta de sucesso** das duas operações não está confirmado 
 npm run typecheck && npm run lint && npm test
 ```
 
-Os três precisam passar. Hoje a suíte tem **515 testes**.
+Os três precisam passar. Hoje a suíte tem **518 testes**.
 
 ## Segurança — pontos já decididos
 

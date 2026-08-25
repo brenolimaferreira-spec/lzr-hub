@@ -61,6 +61,32 @@ export function ixcPhoneFormat(raw:string):string|undefined{
   return undefined;
 }
 
+/**
+ * Os formatos em que o mesmo celular pode estar gravado, por causa do **nono
+ * dígito**.
+ *
+ * Medido no canal real: o WhatsApp entregou `557999151289` — DDD mais **oito**
+ * dígitos — para um celular. O próprio log da Evolution mostra os dois convivendo:
+ * `Register exists for [5579999151289, 557999151289]?`. Se o cliente escrever
+ * pelo formato curto e o IXC tiver o longo, a busca não acha e um cliente antigo
+ * vira lead — o erro que a regra de "exatamente um ou nada" existe para evitar,
+ * entrando por outra porta.
+ *
+ * Fixo não ganha nono dígito: só celular, que começa com 6 a 9 depois do DDD.
+ */
+export function phoneCandidates(raw:string):string[]{
+  let digits=raw.replace(/\D/g,"");
+  if(digits.length>11&&digits.startsWith("55"))digits=digits.slice(2);
+  const variants=new Set<string>([digits]);
+  if(digits.length===10&&/^[6-9]/.test(digits.slice(2))){
+    variants.add(`${digits.slice(0,2)}9${digits.slice(2)}`);
+  }
+  if(digits.length===11&&digits[2]==="9"){
+    variants.add(`${digits.slice(0,2)}${digits.slice(3)}`);
+  }
+  return [...variants].map(ixcPhoneFormat).filter((value):value is string=>!!value);
+}
+
 export class IxcReadonlyError extends Error {
   readonly code:string;
   constructor(code:string){super(code);this.name="IxcReadonlyError";this.code=code;}
@@ -186,18 +212,28 @@ export class IxcReadonlyProvider {
    * WhatsApp do cadastro.
    */
   async findCustomerByPhone(phone:string,correlationId:string):Promise<IxcCustomerDto|undefined>{
-    const masked=ixcPhoneFormat(phone);
-    if(!masked)return undefined;
-    for(const field of ["telefone_celular","whatsapp"]){
-      // Operação `listCustomers` porque é o que isto é: uma listagem da base
-      // filtrada por telefone. Buscar por número não tem cadastro conhecido de
-      // antemão para checar contra a allowlist — depende da base liberada.
-      // rp=2 de propósito: só precisamos saber se é um ou mais de um.
-      const {records}=await this.readPage("listCustomers","cliente",`cliente.${field}`,masked,correlationId,2,"",{oper:"=",sortname:"cliente.id"});
-      if(records.length===1)return IxcCustomerMapper.map(records[0]);
-      if(records.length>1)return undefined;
+    const candidates=phoneCandidates(phone);
+    if(candidates.length===0)return undefined;
+    // Junta o que cada formato achou antes de decidir. Devolver o primeiro
+    // acerto faria a resposta depender da ordem da busca — e se dois formatos
+    // do mesmo número apontarem para cadastros diferentes, alguém digitou
+    // errado num deles, e escolher um seria escolher no escuro.
+    const found=new Map<string,IxcCustomerDto>();
+    for(const masked of candidates){
+      for(const field of ["telefone_celular","whatsapp"]){
+        // Operação `listCustomers` porque é o que isto é: uma listagem da base
+        // filtrada por telefone. Buscar por número não tem cadastro conhecido de
+        // antemão para checar contra a allowlist — depende da base liberada.
+        // rp=2 de propósito: só precisamos saber se é um ou mais de um.
+        const {records}=await this.readPage("listCustomers","cliente",`cliente.${field}`,masked,correlationId,2,"",{oper:"=",sortname:"cliente.id"});
+        if(records.length>1)return undefined;
+        if(records.length===1){
+          const customer=IxcCustomerMapper.map(records[0]);
+          found.set(customer.id,customer);
+        }
+      }
     }
-    return undefined;
+    return found.size===1?[...found.values()][0]:undefined;
   }
   /**
    * UFs e cidades do IXC, para cadastrar cliente.
