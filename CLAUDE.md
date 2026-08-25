@@ -100,7 +100,7 @@ Flags relevantes:
 | Flag | O que libera | Estado em produção |
 |---|---|---|
 | `FEATURE_AUTH` | Exige login e aplica RBAC nas rotas | **ligada** |
-| `FEATURE_N8N_CHANNEL` | Canal WhatsApp via n8n recebe e registra mensagem | **ligada** (modo observação — ver abaixo) |
+| `FEATURE_N8N_CHANNEL` | Canal WhatsApp recebe e registra mensagem (nome histórico: o n8n saiu do caminho, a Evolution chama a API direto) | **ligada** (modo observação — ver abaixo) |
 | `FEATURE_N8N_AUTOREPLY` | A IA **responde ao cliente** pelo canal | desligada |
 | `FEATURE_QUEUES` | Filas reais (Redis/BullMQ) | desligada |
 | `FEATURE_IXC_WRITE` | Escrita no ERP — as 4 operações do catálogo (segunda via, OS, renegociação, cadastro de cliente) | **ligada** |
@@ -205,7 +205,7 @@ O formato da **resposta de sucesso** das duas operações não está confirmado 
 npm run typecheck && npm run lint && npm test
 ```
 
-Os três precisam passar. Hoje a suíte tem **505 testes**.
+Os três precisam passar. Hoje a suíte tem **515 testes**.
 
 ## Segurança — pontos já decididos
 
@@ -253,6 +253,6 @@ Existem duas frentes que convivem: a **funcionalidade real** (IXC, n8n, filas, a
 
 - `docs/security/` — autenticação, revisão de RBAC e auditoria
 - `docs/support/handoff-policy.md` — quando a IA passa para humano
-- `docs/integrations/` — IXC (mapeamento de dados, segredos, ponte) e o **canal de WhatsApp** (Evolution → n8n → HUB), em `whatsapp-evolution-n8n.md`
+- `docs/integrations/` — IXC (mapeamento de dados, segredos, ponte) e o **canal de WhatsApp** (Evolution → n8n → HUB), em `whatsapp-evolution.md`
 - `docs/queues-bullmq.md` — filas
 - Issues no GitHub descrevem o roadmap por milestone (M1 a M5)
