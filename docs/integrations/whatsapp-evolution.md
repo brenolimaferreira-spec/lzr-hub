@@ -68,18 +68,47 @@ down` preserva; **`down -v` apaga**, e o QR precisa ser escaneado de novo.
 
 ## 3. Apontar o webhook para o HUB
 
-Um comando, com a instância já criada:
+Com a instância já criada e conectada.
+
+⚠️ **No PowerShell, `curl` é apelido do `Invoke-WebRequest` e não aceita `-H`.**
+Use o bloco nativo abaixo, ou chame `curl.exe` (com o `.exe`) para o curl de verdade.
+
+```powershell
+$env = Get-Content "$PSScriptRoot\..\..\.env.evolution" -ErrorAction SilentlyContinue
+$key = ($env | Where-Object { $_ -like 'EVOLUTION_API_KEY=*' }) -replace '^EVOLUTION_API_KEY=',''
+$secret = 'COLE_AQUI_O_N8N_CHANNEL_SECRET_DO_RAILWAY'
+
+$body = @{ webhook = @{
+    enabled = $true
+    url     = 'https://lzr-hub-production.up.railway.app/api/channels/evolution'
+    headers = @{ Authorization = "Bearer $secret" }
+    byEvents = $false
+    base64   = $false
+    events   = @('MESSAGES_UPSERT')
+} } | ConvertTo-Json -Depth 5
+
+Invoke-RestMethod -Method Post -Uri 'http://127.0.0.1:8081/webhook/set/LZR-HUB' `
+  -Headers @{ apikey = $key } -ContentType 'application/json' -Body $body
+```
+
+Em bash (WSL, Git Bash):
 
 ```bash
-curl -X POST http://127.0.0.1:8081/webhook/set/LZR-HUB   -H "apikey: $EVOLUTION_API_KEY" -H "content-type: application/json"   -d '{"webhook":{"enabled":true,
+KEY=$(grep '^EVOLUTION_API_KEY=' .env.evolution | cut -d= -f2)
+curl -X POST http://127.0.0.1:8081/webhook/set/LZR-HUB   -H "apikey: $KEY" -H "content-type: application/json"   -d '{"webhook":{"enabled":true,
        "url":"https://lzr-hub-production.up.railway.app/api/channels/evolution",
        "headers":{"Authorization":"Bearer <N8N_CHANNEL_SECRET>"},
        "byEvents":false,"base64":false,
        "events":["MESSAGES_UPSERT"]}}'
 ```
 
-O `<N8N_CHANNEL_SECRET>` é o que já está no Railway. Dá para separar os dois
-definindo `EVOLUTION_WEBHOOK_SECRET`, que tem preferência quando existe.
+O segredo é o `N8N_CHANNEL_SECRET` **do Railway** — o do `.env.local` é outro, e
+usar o errado dá 401. Dá para separar os dois definindo `EVOLUTION_WEBHOOK_SECRET`
+em produção, que tem preferência quando existe.
+
+Para saber se acertou sem mandar mensagem nenhuma, chame a rota de produção com
+um evento que ela ignora: **401** é segredo errado, **503** é segredo ausente lá,
+e `{"ignored":true,"reason":"outro-evento"}` é o segredo certo.
 
 ⚠️ **Só `MESSAGES_UPSERT`.** A Evolution emite dezenas de eventos por minuto
 (conexão, presença, status); os outros são ignorados pela rota, mas assinar só o
