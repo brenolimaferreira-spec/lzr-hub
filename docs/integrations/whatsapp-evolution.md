@@ -148,6 +148,31 @@ for ligado, quem envia passa a ser o próprio HUB chamando a Evolution
 ⚠️ E não deve ser ligado enquanto as respostas do pipeline forem de homologação
 ("preparei a segunda via *fictícia*"). Ver a seção da IA no CLAUDE.md.
 
+## Trocar o segredo sem derrubar o canal
+
+O segredo vive em dois lugares que não dá para salvar ao mesmo tempo: a variável
+no Railway e o cabeçalho do webhook na Evolution. Por isso a rota aceita
+`EVOLUTION_WEBHOOK_SECRET` **e** `N8N_CHANNEL_SECRET` — nesta ordem, os dois
+válidos ao mesmo tempo.
+
+A rotação, sem janela de 401:
+
+1. No Railway, **adicione** `EVOLUTION_WEBHOOK_SECRET` com o valor novo. O antigo
+   continua valendo, então nada para de funcionar
+2. Espere o deploy terminar
+3. Atualize o webhook da Evolution com o valor novo (comando do passo 3)
+4. Confirme com o evento ignorado — tem que responder `200`
+5. Só então **remova** `N8N_CHANNEL_SECRET` do Railway
+
+Gerar um segredo novo:
+
+```powershell
+[Convert]::ToBase64String((1..32 | ForEach-Object { Get-Random -Max 256 })) -replace '[+/=]',''
+```
+
+⚠️ Um segredo que apareceu em print, chat ou log **já vazou**, mesmo que o canal
+siga funcionando. Trocar é barato; descobrir depois quem usou não é.
+
 ## 6. Conferir que funcionou
 
 | Tela | O que deve aparecer |

@@ -26,17 +26,29 @@ const channelEnabled = () => process.env.FEATURE_N8N_CHANNEL === "true";
 const autoReplyEnabled = () => process.env.FEATURE_N8N_AUTOREPLY === "true";
 
 /**
- * O segredo é o mesmo do canal. `EVOLUTION_WEBHOOK_SECRET` tem preferência para
- * quem quiser separar os dois; sem ela, vale o que já existe no Railway — assim
- * a migração não depende de mudar variável e código na mesma janela.
+ * Segredos aceitos. **Mais de um de propósito**, e essa é a única razão de a
+ * função existir em vez de uma comparação direta.
+ *
+ * Trocar um segredo exige mexer em dois lugares que ninguém consegue salvar ao
+ * mesmo tempo: a variável no Railway e o cabeçalho do webhook na Evolution.
+ * Se a rota aceitasse um só, existiria uma janela — o tempo do deploy — em que
+ * toda mensagem de cliente tomaria 401 e sumiria. Aceitando os dois, a rotação
+ * vira: põe o novo, atualiza a Evolution, tira o velho, sem janela nenhuma.
  */
-const channelSecret = () => process.env.EVOLUTION_WEBHOOK_SECRET?.trim() || process.env.N8N_CHANNEL_SECRET?.trim();
+function acceptedSecrets(): string[] {
+  return [process.env.EVOLUTION_WEBHOOK_SECRET, process.env.N8N_CHANNEL_SECRET]
+    .map((value) => value?.trim())
+    .filter((value): value is string => !!value);
+}
 
 export async function POST(request: Request) {
   if (!channelEnabled()) return NextResponse.json({ error: "Canal de WhatsApp desativado" }, { status: 503 });
-  const secret = channelSecret();
-  if (!secret) return NextResponse.json({ error: "Canal mal configurado" }, { status: 503 });
-  if (request.headers.get("authorization") !== `Bearer ${secret}`) {
+  const secrets = acceptedSecrets();
+  // Nenhum segredo configurado responde 503, não 401: é defeito de configuração
+  // nossa, e devolver "não autorizado" mandaria quem depura procurar no lugar errado.
+  if (secrets.length === 0) return NextResponse.json({ error: "Canal mal configurado" }, { status: 503 });
+  const offered = request.headers.get("authorization");
+  if (!secrets.some((secret) => offered === `Bearer ${secret}`)) {
     return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
   }
 
