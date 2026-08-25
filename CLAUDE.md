@@ -253,6 +253,6 @@ Existem duas frentes que convivem: a **funcionalidade real** (IXC, n8n, filas, a
 
 - `docs/security/` — autenticação, revisão de RBAC e auditoria
 - `docs/support/handoff-policy.md` — quando a IA passa para humano
-- `docs/integrations/` — IXC (mapeamento de dados, segredos, ponte)
+- `docs/integrations/` — IXC (mapeamento de dados, segredos, ponte) e o **canal de WhatsApp** (Evolution → n8n → HUB), em `whatsapp-evolution-n8n.md`
 - `docs/queues-bullmq.md` — filas
 - Issues no GitHub descrevem o roadmap por milestone (M1 a M5)
