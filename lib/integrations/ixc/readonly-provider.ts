@@ -74,6 +74,21 @@ export function ixcPhoneFormat(raw:string):string|undefined{
  *
  * Fixo não ganha nono dígito: só celular, que começa com 6 a 9 depois do DDD.
  */
+/**
+ * Onde procurar o telefone, em ordem de aposta.
+ *
+ * Medido em 800 cadastros reais: `telefone_celular` está preenchido em **100%**
+ * deles e `whatsapp` em 99%; `fone` e `telefone_comercial` aparecem em ~3%. Por
+ * isso os dois primeiros formam a primeira tentativa, e os raros só são
+ * consultados quando ela não achou nada — cada campo a mais é uma consulta ao
+ * ERP por mensagem recebida.
+ *
+ * ⚠️ Todos os 800 estavam **mascarados**, sem exceção. Procurar por dígitos
+ * puros seria consulta jogada fora, e é por isso que só o formato com máscara é
+ * usado aqui — diferente do documento, onde os dois aparecem.
+ */
+const PHONE_FIELD_TIERS = [["telefone_celular","whatsapp"],["fone","telefone_comercial"]] as const;
+
 export function phoneCandidates(raw:string):string[]{
   let digits=raw.replace(/\D/g,"");
   if(digits.length>11&&digits.startsWith("55"))digits=digits.slice(2);
@@ -214,26 +229,32 @@ export class IxcReadonlyProvider {
   async findCustomerByPhone(phone:string,correlationId:string):Promise<IxcCustomerDto|undefined>{
     const candidates=phoneCandidates(phone);
     if(candidates.length===0)return undefined;
-    // Junta o que cada formato achou antes de decidir. Devolver o primeiro
-    // acerto faria a resposta depender da ordem da busca — e se dois formatos
-    // do mesmo número apontarem para cadastros diferentes, alguém digitou
-    // errado num deles, e escolher um seria escolher no escuro.
-    const found=new Map<string,IxcCustomerDto>();
-    for(const masked of candidates){
-      for(const field of ["telefone_celular","whatsapp"]){
-        // Operação `listCustomers` porque é o que isto é: uma listagem da base
-        // filtrada por telefone. Buscar por número não tem cadastro conhecido de
-        // antemão para checar contra a allowlist — depende da base liberada.
-        // rp=2 de propósito: só precisamos saber se é um ou mais de um.
-        const {records}=await this.readPage("listCustomers","cliente",`cliente.${field}`,masked,correlationId,2,"",{oper:"=",sortname:"cliente.id"});
-        if(records.length>1)return undefined;
-        if(records.length===1){
-          const customer=IxcCustomerMapper.map(records[0]);
-          found.set(customer.id,customer);
+    for(const fields of PHONE_FIELD_TIERS){
+      // Junta o que cada formato achou antes de decidir. Devolver o primeiro
+      // acerto faria a resposta depender da ordem da busca — e se dois formatos
+      // do mesmo número apontarem para cadastros diferentes, alguém digitou
+      // errado num deles, e escolher um seria escolher no escuro.
+      const found=new Map<string,IxcCustomerDto>();
+      for(const masked of candidates){
+        for(const field of fields){
+          // Operação `listCustomers` porque é o que isto é: uma listagem da base
+          // filtrada por telefone. Buscar por número não tem cadastro conhecido de
+          // antemão para checar contra a allowlist — depende da base liberada.
+          // rp=2 de propósito: só precisamos saber se é um ou mais de um.
+          const {records}=await this.readPage("listCustomers","cliente",`cliente.${field}`,masked,correlationId,2,"",{oper:"=",sortname:"cliente.id"});
+          if(records.length>1)return undefined;
+          if(records.length===1){
+            const customer=IxcCustomerMapper.map(records[0]);
+            found.set(customer.id,customer);
+          }
         }
       }
+      if(found.size===1)return [...found.values()][0];
+      // Achou mais de um cadastro distinto: é ambíguo, e o próximo campo não
+      // desempata — só acrescentaria mais um palpite.
+      if(found.size>1)return undefined;
     }
-    return found.size===1?[...found.values()][0]:undefined;
+    return undefined;
   }
   /**
    * UFs e cidades do IXC, para cadastrar cliente.

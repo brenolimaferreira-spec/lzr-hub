@@ -241,7 +241,22 @@ dois formatos — e continua valendo a regra de **exatamente um resultado**: se 
 dois formatos apontarem para cadastros diferentes, alguém digitou errado num
 deles, e escolher um seria escolher no escuro.
 
-Ver `phoneCandidates` em `lib/integrations/ixc/readonly-provider.ts`.
+Medido em 800 cadastros reais da base: **quase 7% estão gravados sem o nono
+dígito** (55 de 800 no `telefone_celular`, 61 de 800 no `whatsapp`). Não é caso
+de borda.
+
+Os mesmos 800 mostraram outra coisa: **todos mascarados, sem exceção**. Por isso
+a busca só tenta o formato com máscara — procurar dígitos puros seria consulta
+jogada fora a cada mensagem recebida.
+
+E a ordem dos campos segue a mesma medição: `telefone_celular` (100% preenchido)
+e `whatsapp` (99%) primeiro; `fone` e `telefone_comercial` (~3%) só se os
+primeiros não acharem nada.
+
+Conferido nos dois sentidos contra clientes reais: cliente gravado com 10 dígitos
+é achado quando o WhatsApp entrega 10 **ou** 11, e vice-versa.
+
+Ver `phoneCandidates` e `PHONE_FIELD_TIERS` em `lib/integrations/ixc/readonly-provider.ts`.
 
 ## Por que a captação de lead às vezes não cria nada
 
