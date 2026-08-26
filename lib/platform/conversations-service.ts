@@ -1,4 +1,5 @@
-import { and, desc, eq, inArray, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, notLike, sql } from "drizzle-orm";
+import { NON_CUSTOMER_LIKE, isNonCustomerConversation } from "./conversation-scope.ts";
 import { channelMessages, conversationOutcomes } from "../../db/schema.ts";
 
 /**
@@ -54,6 +55,8 @@ export class DbConversationsRepository implements ConversationsRepository {
       lastAt: sql<string>`max(${channelMessages.createdAt})`.as("last_at"),
       messages: sql<number>`count(*)`.as("messages"),
     }).from(channelMessages)
+      // Conversa de grupo não é atendimento e não aparece na fila.
+      .where(notLike(channelMessages.externalConversationId, NON_CUSTOMER_LIKE))
       .groupBy(channelMessages.channel, channelMessages.externalConversationId)
       .orderBy(desc(sql`max(${channelMessages.createdAt})`))
       .limit(limit);
@@ -137,6 +140,8 @@ export class MemoryConversationsRepository implements ConversationsRepository {
   async listConversations(limit: number): Promise<ConversationSummary[]> {
     const byId = new Map<string, ConversationSummary>();
     for (const row of [...this.rows].sort((a, b) => a.createdAt.localeCompare(b.createdAt))) {
+      // Mesma regra do repositório real: grupo não é atendimento.
+      if (isNonCustomerConversation(row.externalConversationId)) continue;
       const key = `${row.channel}:${row.externalConversationId}`;
       const current = byId.get(key);
       byId.set(key, {

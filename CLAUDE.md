@@ -205,7 +205,7 @@ O formato da **resposta de sucesso** das duas operações não está confirmado 
 npm run typecheck && npm run lint && npm test
 ```
 
-Os três precisam passar. Hoje a suíte tem **518 testes**.
+Os três precisam passar. Hoje a suíte tem **525 testes**.
 
 ## Segurança — pontos já decididos
 
@@ -227,6 +227,7 @@ Ver [`docs/security/authentication.md`](docs/security/authentication.md).
 - Tempo médio de atendimento também não é medido — a Visão geral escreve isso em vez de estimar
 - Responder pela tela de Atendimentos ainda não existe: quem responde é o fluxo do n8n, então o campo fica desabilitado. É por isso que o copiloto tem botão **"Copiar"** e não "Enviar", e por isso a auditoria registra `copilot.suggestion.used` como *copiada*, não como enviada
 - A base de conhecimento **não é segmentada por perfil**: todo documento publicado é visível a quem tem `customer.read`. Não existe conceito de documento restrito
+- **Conversa de grupo do WhatsApp não é atendimento.** O caminho antigo (via n8n) repassava qualquer mensagem, e identificadores `@g.us` entraram na tela de Atendimentos com intenção classificada e transbordo contado. A rota nova recusa na entrada; o que já está gravado é **filtrado na leitura** (`lib/platform/conversation-scope.ts`), não apagado — filtrar preserva o histórico e não exige migração. `scripts/contar-grupos.mjs` mede o resíduo
 - A conversa do canal ainda **não é associada** ao cadastro do IXC na tela de Atendimentos, mas casar telefone com cliente **já funciona**: `findCustomerByPhone` em `lib/integrations/ixc/readonly-provider.ts`. O segredo é o formato — o canal manda `5579998307232` e o IXC guarda `(79) 99830-7232`; dígitos puros devolvem zero em silêncio. A regra é **exatamente um resultado ou nada**: buscar pelo final do número trouxe 4 clientes diferentes na base real, e identificar o cliente errado é pior que não identificar
 - `FEATURE_IXC_FULL_BASE` está **ligada** em produção (exigia `FEATURE_AUTH=true`, o código recusa subir sem isso — e ambas já estão de pé). A lista de Clientes deixou de ser só a allowlist de homologação; Chamados mostra a fila real do provedor (OS não fechadas, paginadas). A OS não traz o nome do cliente — só `id_cliente` e endereço — e buscar o nome seria uma consulta por linha da página. `scripts/ixc-probe-listing.mjs` foi o que confirmou, antes de ligar, que a listagem paginada do IXC de fato funciona
 - Churn é **realizado**, não previsto: medimos quem saiu, não quem vai sair. Não há score de saúde nem elegibilidade de upgrade — nada disso é calculado, e a tela diz o que faltaria

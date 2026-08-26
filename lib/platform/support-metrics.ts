@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
-import { and, eq, gte } from "drizzle-orm";
+import { and, eq, gte, notLike } from "drizzle-orm";
+import { NON_CUSTOMER_LIKE } from "./conversation-scope.ts";
 import { conversationOutcomes, csatRatings } from "../../db/schema.ts";
 
 /** Pergunta enviada ao cliente no fim da conversa. A resposta seguinte vira nota. */
@@ -133,7 +134,11 @@ export class DbSupportMetricsRepository implements SupportMetricsRepository {
       finalStatus: conversationOutcomes.finalStatus,
       handoff: conversationOutcomes.handoff,
       handoffReason: conversationOutcomes.handoffReason,
-    }).from(conversationOutcomes).where(gte(conversationOutcomes.createdAt, sinceIso));
+    }).from(conversationOutcomes).where(and(
+      gte(conversationOutcomes.createdAt, sinceIso),
+      // Conversa de grupo não é atendimento. Ver lib/platform/conversation-scope.ts.
+      notLike(conversationOutcomes.externalConversationId, NON_CUSTOMER_LIKE),
+    ));
   }
 
   async listRatings(sinceIso: string) {
