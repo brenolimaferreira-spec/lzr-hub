@@ -107,6 +107,7 @@ Flags relevantes:
 | `FEATURE_IXC_FULL_BASE` | Leitura da **base inteira** do IXC, não só da allowlist | **ligada** |
 | `FEATURE_LLM_INTENT` | Classificação de intenção por modelo de linguagem (Groq) | **ligada** |
 | `FEATURE_COPILOT_LLM` | O copiloto do atendente **redige** a resposta a partir dos trechos citados | desligada — sem ela o copiloto mostra os trechos como estão |
+| `FEATURE_META_WHATSAPP` | Canal **oficial** da Meta (Cloud API) — `/api/channels/meta` | desligada — pendente conta Meta Business e migração do número |
 | `FEATURE_TELEGRAM_ALERTS` | Ingestão de alerta de rede real via webhook do Telegram | desligada — pendente criar o bot e chamar `setWebhook` (ver `app/api/integrations/telegram/webhook`) |
 | `IXC_MODE` | `disabled` / `staging-readonly` | `staging-readonly` |
 
@@ -205,7 +206,7 @@ O formato da **resposta de sucesso** das duas operações não está confirmado 
 npm run typecheck && npm run lint && npm test
 ```
 
-Os três precisam passar. Hoje a suíte tem **525 testes**.
+Os três precisam passar. Hoje a suíte tem **536 testes**.
 
 ## Segurança — pontos já decididos
 
@@ -254,6 +255,6 @@ Existem duas frentes que convivem: a **funcionalidade real** (IXC, n8n, filas, a
 
 - `docs/security/` — autenticação, revisão de RBAC e auditoria
 - `docs/support/handoff-policy.md` — quando a IA passa para humano
-- `docs/integrations/` — IXC (mapeamento de dados, segredos, ponte) e o **canal de WhatsApp** (Evolution → n8n → HUB), em `whatsapp-evolution.md`
+- `docs/integrations/` — IXC (mapeamento de dados, segredos, ponte) e o **canal de WhatsApp**: `whatsapp-meta.md` (oficial, recomendado) e `whatsapp-evolution.md` (não oficial, em risco de banimento)
 - `docs/queues-bullmq.md` — filas
 - Issues no GitHub descrevem o roadmap por milestone (M1 a M5)

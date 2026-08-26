@@ -1,5 +1,15 @@
 # Canal de WhatsApp: Evolution API → LZR HUB
 
+> ⚠️ **Este caminho é não oficial e coloca o número em risco de banimento.**
+>
+> A Evolution usa **Baileys**, uma reimplementação do WhatsApp Web feita por
+> engenharia reversa. Automação por ela **viola os Termos de Serviço**, e em
+> 26/08/2026 a Meta avisou que a conta poderia ser restringida.
+>
+> O caminho oficial está em [`whatsapp-meta.md`](whatsapp-meta.md) e já está
+> implementado (`/api/channels/meta`). Este documento fica como referência de
+> quem ainda depende da Evolution enquanto o número não é migrado.
+
 Este documento existe porque o container da Evolution foi perdido em 16/08/2026 e
 **o passo a passo não estava escrito em lugar nenhum** — nem a chave, nem as
 variáveis, nem qual instância o n8n usava. Reconstruir custou mais que teria
